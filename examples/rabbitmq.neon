@@ -1,0 +1,10 @@
+extensions:
+    rabbitmq: Contributte\RabbitMQ\DI\RabbitMQExtension
+
+rabbitmq:
+    consumers:
+        invoiceParse:
+            queue: invoice.parse
+            callback: @App\Messaging\InvoiceConsumer::consume
+            qos:
+                prefetchCount: 1
