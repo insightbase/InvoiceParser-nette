@@ -53,12 +53,35 @@ final class AzureDocumentIntelligenceAnalyzer implements DocumentAnalyzerInterfa
     private function buildAnalyzeUrl(): string
     {
         $endpoint = rtrim($this->endpoint, '/');
+        $servicePath = $this->resolveServicePath();
         return sprintf(
-            '%s/documentintelligence/documentModels/%s:analyze?api-version=%s',
+            '%s/%s/documentModels/%s:analyze?api-version=%s',
             $endpoint,
+            $servicePath,
             rawurlencode($this->model),
             rawurlencode($this->apiVersion),
         );
+    }
+
+    private function resolveServicePath(): string
+    {
+        $parsedPath = trim((string) parse_url($this->endpoint, PHP_URL_PATH), '/');
+        if ($parsedPath === 'documentintelligence' || $parsedPath === 'formrecognizer') {
+            return $parsedPath;
+        }
+
+        // Document Intelligence v4+ uses /documentintelligence, older APIs use /formrecognizer.
+        return $this->isDocumentIntelligenceV4Api() ? 'documentintelligence' : 'formrecognizer';
+    }
+
+    private function isDocumentIntelligenceV4Api(): bool
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $this->apiVersion, $matches) !== 1) {
+            return false;
+        }
+
+        $numericDate = ((int) $matches[1]) * 10000 + ((int) $matches[2]) * 100 + ((int) $matches[3]);
+        return $numericDate >= 20241130;
     }
 
     /**
